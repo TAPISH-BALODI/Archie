@@ -1,6 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAppState } from '../store';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ProgressBar } from '../components/ProgressBar';
 import { StatusBadge } from '../components/StatusBadge';
 
@@ -11,14 +11,19 @@ export function ProjectPage() {
   const project = useMemo(() => (state.projects ?? []).find(p => p.id === projectId), [state.projects, projectId]);
   const [taskName, setTaskName] = useState('');
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
+  const loadedProjectIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!projectId) return;
-    const needsTasks = project && (!project.tasks || project.tasks.length === 0);
-    if (needsTasks) {
+    if (!projectId || !project) return;
+   
+    const tasksNotLoaded = project.tasks === undefined || 
+      (Array.isArray(project.tasks) && project.tasks.length === 0 && loadedProjectIdRef.current !== projectId);
+    
+    if (tasksNotLoaded) {
+      loadedProjectIdRef.current = projectId;
       void methods.loadProjectTasks(project.id);
     }
-  }, [projectId, project]);
+  }, [projectId, project, methods]);
 
   if (!project) {
     return (
@@ -112,7 +117,7 @@ export function ProjectPage() {
         </div>
 
         <div className="list">
-          {(project?.tasks ?? []).map(t => {
+          {project?.tasks?.map(t => {
             const member = (state.team ?? []).find(m => m.id === t.assigneeId);
             return (
               <div className="list-item" key={t.id}>

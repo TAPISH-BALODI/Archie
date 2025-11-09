@@ -53,10 +53,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setError(undefined);
     try {
       const [projects, team] = await Promise.all([api.listProjects(), api.listTeam()]);
-      setState(toState(projects, team));
+      setState(toState(projects || [], team || []));
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load');
-    } finally { end(); }
+      console.error('Failed to load data:', e);
+      setError(e?.message ?? 'Failed to load. Check your API connection.');
+      setState({ projects: [], team: [] });
+    } finally {
+      end();
+    }
   }
 
   useEffect(() => {
@@ -72,10 +76,20 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setState(prev => ({
           ...prev,
           projects: prev.projects.map(p =>
-            p.id === projectId ? { ...p, tasks: tasks as unknown as Task[] } : p
+            p.id === projectId ? { ...p, tasks: (tasks || []) as unknown as Task[] } : p
           )
         }));
-      } finally { end(); }
+      } catch (e: any) {
+        console.error('Failed to load tasks:', e);
+        setState(prev => ({
+          ...prev,
+          projects: prev.projects.map(p =>
+            p.id === projectId ? { ...p, tasks: [] } : p
+          )
+        }));
+      } finally {
+        end();
+      }
     },
     addProject: async (name: string) => {
       begin();
@@ -205,10 +219,39 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       }
     },
     deleteTask: async (projectId: string, taskId: string) => {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      
+      const prevTasks = project.tasks;
+      setState(prev => ({
+        ...prev,
+        projects: prev.projects.map(p => {
+          if (p.id !== projectId) return p;
+          const tasks = (p.tasks || []).filter(t => t.id !== taskId);
+          const progress = p.autoProgress ? computeProgressFromTasks(tasks as unknown as Task[]) : p.progress;
+          return { ...p, tasks: tasks as unknown as Task[], progress };
+        })
+      }));
+      
       begin();
       try {
         await api.deleteTask(projectId, taskId);
-        await loadAll();
+        const tasks = await api.listTasks(projectId);
+        setState(prev => ({
+          ...prev,
+          projects: prev.projects.map(p =>
+            p.id === projectId ? { ...p, tasks: (tasks || []) as unknown as Task[] } : p
+          )
+        }));
+      } catch (e: any) {
+        console.error('Failed to delete task:', e);
+        // Revert on error
+        setState(prev => ({
+          ...prev,
+          projects: prev.projects.map(p =>
+            p.id === projectId ? { ...p, tasks: prevTasks as unknown as Task[] } : p
+          )
+        }));
       } finally {
         end();
       }
