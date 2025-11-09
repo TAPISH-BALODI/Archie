@@ -13,7 +13,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../.env') });
 const app = (0, express_1.default)();
 const PORT = Number(process.env.PORT ?? 4000);
-const ORIGIN = process.env.ORIGIN ?? 'http://localhost:5173';
+const ORIGIN = process.env.ORIGIN ;
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
     throw new Error('DATABASE_URL is not set. Please set it to your MySQL connection string.');
