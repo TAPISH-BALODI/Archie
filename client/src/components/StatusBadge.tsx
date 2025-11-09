@@ -4,4 +4,3 @@ export function StatusBadge({ status }: { status: 'Completed' | 'In Progress' | 
   return <span className={cls}>{status}</span>;
 }
 
-

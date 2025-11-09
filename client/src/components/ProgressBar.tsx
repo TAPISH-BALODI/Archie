@@ -7,4 +7,3 @@ export function ProgressBar({ percent }: { percent: number }) {
   );
 }
 
-

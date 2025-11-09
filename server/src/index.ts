@@ -11,9 +11,9 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const app = express();
 
 const PORT = Number(process.env.PORT ?? 4000);
-const ORIGIN = process.env.ORIGIN ;
+const ORIGIN:any = process.env.ORIGIN ;
 const DATABASE_URL = process.env.DATABASE_URL;
-app.use(cors({ origin: ORIGIN }));
+app.use(cors({ origin: [ORIGIN,"http://localhost:5173"] }));
 
 if (!DATABASE_URL) {
   throw new Error('DATABASE_URL is not set. Please set it to your MySQL connection string.');

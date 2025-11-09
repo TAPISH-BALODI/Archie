@@ -11,7 +11,7 @@ export interface Project {
   id: string;
   name: string;
   tasks: Task[];
-  progress: number; // 0..100
+  progress: number; 
   autoProgress: boolean; // if true, progress mirrors task completion ratio
 }
 
@@ -24,5 +24,4 @@ export interface AppState {
   projects: Project[];
   team: TeamMember[];
 }
-
 

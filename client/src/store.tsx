@@ -251,7 +251,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       assignmentTimers.current.set(key, timeoutId);
     },
     addTeamMember: async (name: string) => {
-      begin(); try { await api.createMember(name); await loadAll(); } finally { end(); }
+      begin();
+      try {
+        await api.createMember(name);
+        await loadAll();
+      } finally {
+        end();
+      }
     }
   };
 
@@ -274,5 +280,4 @@ export function getProjectStatus(p: Project): 'Completed' | 'In Progress' | 'Not
   if (p.tasks.length > 0 || p.progress > 0) return 'In Progress';
   return 'Not Started';
 }
-
 

@@ -7,4 +7,3 @@ export function LoadingOverlay({ show }: { show: boolean }) {
   );
 }
 
-

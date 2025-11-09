@@ -54,4 +54,3 @@ export const api = {
   createMember: (name: string) => http<ApiTeamMember>('/team', { method: 'POST', body: JSON.stringify({ name }) })
 };
 
-
