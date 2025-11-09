@@ -78,10 +78,22 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       } finally { end(); }
     },
     addProject: async (name: string) => {
-      begin(); try { await api.createProject(name); await loadAll(); } finally { end(); }
+      begin();
+      try {
+        await api.createProject(name);
+        await loadAll();
+      } finally {
+        end();
+      }
     },
     deleteProject: async (projectId: string) => {
-      begin(); try { await api.deleteProject(projectId); await loadAll(); } finally { end(); }
+      begin();
+      try {
+        await api.deleteProject(projectId);
+        await loadAll();
+      } finally {
+        end();
+      }
     },
     setProjectProgress: async (projectId: string, progress: number) => {
       const clamped = Math.max(0, Math.min(100, Math.round(progress)));
@@ -106,7 +118,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       progressTimers.current.set(projectId, tid);
     },
     toggleProjectAuto: async (projectId: string, auto: boolean) => {
-      begin(); try { await api.updateProject(projectId, { autoProgress: auto }); await loadAll(); } finally { end(); }
+      begin();
+      try {
+        await api.updateProject(projectId, { autoProgress: auto });
+        await loadAll();
+      } finally {
+        end();
+      }
     },
     addTask: async (projectId: string, name: string, assigneeId?: string) => {
       const tempId = `temp_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
@@ -160,18 +178,16 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       createTaskTimers.current.set(tempId, tid);
     },
     toggleTask: async (projectId: string, taskId: string) => {
-      // Optimistic update without global loading
       const project = state.projects.find(p => p.id === projectId);
       const task = project?.tasks.find(t => t.id === taskId);
       if (!project || !task) {
-        // fallback: just fire request
         await api.updateTask(projectId, taskId, { completed: true });
         await methods.loadProjectTasks(projectId);
         return;
       }
       const nextCompleted = !task.completed;
       const prevState = state;
-      // optimistic toggle and progress recompute
+      // Optimistic update: toggle task and recompute progress
       setState(prev => ({
         ...prev,
         projects: prev.projects.map(p => {
@@ -184,12 +200,18 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       try {
         await api.updateTask(projectId, taskId, { completed: nextCompleted });
       } catch (e) {
-        // revert on error
+        // Revert on error
         setState(prevState);
       }
     },
     deleteTask: async (projectId: string, taskId: string) => {
-      begin(); try { await api.deleteTask(projectId, taskId); await loadAll(); } finally { end(); }
+      begin();
+      try {
+        await api.deleteTask(projectId, taskId);
+        await loadAll();
+      } finally {
+        end();
+      }
     },
     assignTask: async (projectId: string, taskId: string, assigneeId?: string) => {
       setState(prev => ({

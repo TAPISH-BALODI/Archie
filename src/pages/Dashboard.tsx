@@ -91,10 +91,12 @@ export function Dashboard() {
               <div className="space-between">
                 <button
                   className="btn danger"
-                  onClick={() => methods.deleteProject(p.id)}
+                  onClick={e => {
+                    e.stopPropagation();
+                    methods.deleteProject(p.id);
+                  }}
                   title="Delete project"
                   disabled={loading}
-                  onClickCapture={e => e.stopPropagation()}
                 >
                   Delete
                 </button>

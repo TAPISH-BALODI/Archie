@@ -183,9 +183,18 @@ app.put('/projects/:id/tasks/:taskId', async (req, res) => {
     await conn.beginTransaction();
     const sets: string[] = [];
     const vals: any[] = [];
-    if (name !== undefined) { sets.push('name = ?'); vals.push(String(name)); }
-    if (completed !== undefined) { sets.push('completed = ?'); vals.push(completed ? 1 : 0); }
-    if (assigneeId !== undefined) { sets.push('assignee_id = ?'); vals.push(assigneeId ?? null); }
+    if (name !== undefined) {
+      sets.push('name = ?');
+      vals.push(String(name));
+    }
+    if (completed !== undefined) {
+      sets.push('completed = ?');
+      vals.push(completed ? 1 : 0);
+    }
+    if (assigneeId !== undefined) {
+      sets.push('assignee_id = ?');
+      vals.push(assigneeId ?? null);
+    }
     if (sets.length) {
       vals.push(taskId);
       await conn.query(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`, vals);

@@ -8,17 +8,17 @@ export function ProjectPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { state, methods, loading } = useAppState();
-      const project = useMemo(() => (state.projects ?? []).find(p => p.id === projectId), [state.projects, projectId]);
-      const [taskName, setTaskName] = useState('');
-      const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
+  const project = useMemo(() => (state.projects ?? []).find(p => p.id === projectId), [state.projects, projectId]);
+  const [taskName, setTaskName] = useState('');
+  const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
 
-      useEffect(() => {
-        if (!projectId) return;
-        const needsTasks = project && (!project.tasks || project.tasks.length === 0);
-        if (needsTasks) {
-          void methods.loadProjectTasks(project.id);
-        }
-      }, [projectId, project]);
+  useEffect(() => {
+    if (!projectId) return;
+    const needsTasks = project && (!project.tasks || project.tasks.length === 0);
+    if (needsTasks) {
+      void methods.loadProjectTasks(project.id);
+    }
+  }, [projectId, project]);
 
   if (!project) {
     return (
@@ -47,7 +47,7 @@ export function ProjectPage() {
           <div className="title">{project.name}</div>
           <StatusBadge status={status} />
         </div>
-        <div className="row muted">{completedCount} / {project.tasks.length} tasks complete</div>
+        <div className="row muted">{completedCount} / {(project.tasks ?? []).length} tasks complete</div>
         <ProgressBar percent={project.progress} />
         <div className="row">
           <label className="row" style={{ gap: 6 }}>
@@ -135,7 +135,7 @@ export function ProjectPage() {
                     disabled={loading}
                   >
                     <option value="">Unassigned</option>
-                    {state.team.map(m => (
+                    {(state.team ?? []).map(m => (
                       <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
