@@ -21,7 +21,6 @@ type Ctx = { state: AppState; methods: Methods; loading: boolean; error?: string
 const AppStateContext = createContext<Ctx | null>(null);
 
 function toState(projects: ApiProject[], team: TeamMember[]): AppState {
-  // Api types already match our front-end types closely
   return { projects: projects as unknown as Project[], team };
 }
 

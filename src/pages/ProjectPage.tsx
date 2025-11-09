@@ -8,15 +8,17 @@ export function ProjectPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { state, methods, loading } = useAppState();
+      const project = useMemo(() => (state.projects ?? []).find(p => p.id === projectId), [state.projects, projectId]);
+      const [taskName, setTaskName] = useState('');
+      const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    if (!projectId) return;
-    void methods.loadProjectTasks(projectId);
-  }, [projectId]);
-
-  const project = useMemo(() => (state.projects ?? []).find(p => p.id === projectId), [state.projects, projectId]);
-  const [taskName, setTaskName] = useState('');
-  const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
+      useEffect(() => {
+        if (!projectId) return;
+        const needsTasks = project && (!project.tasks || project.tasks.length === 0);
+        if (needsTasks) {
+          void methods.loadProjectTasks(project.id);
+        }
+      }, [projectId, project]);
 
   if (!project) {
     return (
