@@ -42,7 +42,7 @@ function createPoolFromUrl(urlString: string) {
 
 const pool = createPoolFromUrl(DATABASE_URL);
 
-app.use(cors({ origin: ORIGIN }));
+app.use(cors({ origin: [ORIGIN,"https://archie-frontend-eta.vercel.app/"] }));
 app.use(compression());
 app.use(express.json());
 
