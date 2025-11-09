@@ -43,21 +43,6 @@ function createPoolFromUrl(urlString: string) {
 
 const pool = createPoolFromUrl(DATABASE_URL);
 
-const allowedOrigins = (ORIGIN && ORIGIN.trim().length > 0
-  ? ORIGIN.split(',').map(s => s.trim()).filter(Boolean)
-  : ['http://localhost:5173']);
-const corsOptions:any = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-} as const;
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
-
 app.use(compression());
 app.use(express.json());
 
