@@ -5,14 +5,18 @@ import { api, type ApiProject, type ApiTask } from './api';
 type Methods = {
   reload: () => Promise<void>;
   addProject: (name: string) => Promise<void>;
+  addProjectWithDetails: (data: { name: string; tags?: string[]; priority?: string; deadline?: string }) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   setProjectProgress: (projectId: string, progress: number) => Promise<void>;
   toggleProjectAuto: (projectId: string, auto: boolean) => Promise<void>;
   loadProjectTasks: (projectId: string) => Promise<void>;
-  addTask: (projectId: string, name: string, assigneeId?: string) => Promise<void>;
+  addTask: (projectId: string, name: string, assigneeId?: string, status?: string, description?: string) => Promise<void>;
   toggleTask: (projectId: string, taskId: string) => Promise<void>;
   deleteTask: (projectId: string, taskId: string) => Promise<void>;
   assignTask: (projectId: string, taskId: string, assigneeId?: string) => Promise<void>;
+  updateTaskDetails: (projectId: string, taskId: string, data: { status?: string; description?: string }) => Promise<void>;
+  addTaskComment: (projectId: string, taskId: string, text: string) => Promise<void>;
+  deleteTaskComment: (projectId: string, taskId: string, commentId: string) => Promise<void>;
   addTeamMember: (name: string) => Promise<void>;
 };
 
@@ -94,7 +98,16 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     addProject: async (name: string) => {
       begin();
       try {
-        await api.createProject(name);
+        await api.createProject({ name });
+        await loadAll();
+      } finally {
+        end();
+      }
+    },
+    addProjectWithDetails: async (data: { name: string; tags?: string[]; priority?: string; deadline?: string }) => {
+      begin();
+      try {
+        await api.createProject(data);
         await loadAll();
       } finally {
         end();
@@ -140,14 +153,21 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         end();
       }
     },
-    addTask: async (projectId: string, name: string, assigneeId?: string) => {
+    addTask: async (projectId: string, name: string, assigneeId?: string, status?: string, description?: string) => {
       const tempId = `temp_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
       const safeName = name.trim() || 'Untitled Task';
       setState(prev => ({
         ...prev,
         projects: prev.projects.map(p => {
           if (p.id !== projectId) return p;
-          const tasks: Task[] = [{ id: tempId, name: safeName, completed: false, assigneeId }, ...p.tasks];
+          const tasks: Task[] = [{ 
+            id: tempId, 
+            name: safeName, 
+            completed: false, 
+            assigneeId,
+            status: (status as 'draft' | 'version' | 'active') || 'active',
+            description: description
+          }, ...p.tasks];
           const progress = p.autoProgress ? computeProgressFromTasks(tasks) : p.progress;
           return { ...p, tasks, progress };
         })
@@ -156,7 +176,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       if (existing) clearTimeout(existing);
       const tid = setTimeout(async () => {
         try {
-          const created = await api.createTask(projectId, safeName, assigneeId);
+          const created = await api.createTask(projectId, { name: safeName, assigneeId, status, description });
           setState(prev => ({
             ...prev,
             projects: prev.projects.map(p => {
@@ -167,7 +187,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
                       id: created.id,
                       name: created.name,
                       completed: created.completed,
-                      assigneeId: created.assigneeId ?? undefined
+                      assigneeId: created.assigneeId ?? undefined,
+                      status: created.status,
+                      description: created.description,
+                      comments: created.comments
                     } as unknown as Task)
                   : t
               );
@@ -201,7 +224,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       }
       const nextCompleted = !task.completed;
       const prevState = state;
-      // Optimistic update: toggle task and recompute progress
       setState(prev => ({
         ...prev,
         projects: prev.projects.map(p => {
@@ -214,7 +236,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       try {
         await api.updateTask(projectId, taskId, { completed: nextCompleted });
       } catch (e) {
-        // Revert on error
         setState(prevState);
       }
     },
@@ -245,7 +266,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         }));
       } catch (e: any) {
         console.error('Failed to delete task:', e);
-        // Revert on error
         setState(prev => ({
           ...prev,
           projects: prev.projects.map(p =>
@@ -292,6 +312,76 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         }
       }, 500);
       assignmentTimers.current.set(key, timeoutId);
+    },
+    updateTaskDetails: async (projectId: string, taskId: string, data: { status?: string; description?: string }) => {
+      begin();
+      try {
+        const updated = await api.updateTask(projectId, taskId, data);
+        setState(prev => ({
+          ...prev,
+          projects: prev.projects.map(p => {
+            if (p.id !== projectId) return p;
+            return {
+              ...p,
+              tasks: p.tasks.map(t => (t.id === taskId ? ({
+                ...t,
+                status: updated.status as 'draft' | 'version' | 'active' | undefined,
+                description: updated.description
+              }) : t))
+            };
+          })
+        }));
+      } finally {
+        end();
+      }
+    },
+    addTaskComment: async (projectId: string, taskId: string, text: string) => {
+      begin();
+      try {
+        const comment = await api.addTaskComment(projectId, taskId, text);
+        setState(prev => ({
+          ...prev,
+          projects: prev.projects.map(p => {
+            if (p.id !== projectId) return p;
+            return {
+              ...p,
+              tasks: p.tasks.map(t => {
+                if (t.id !== taskId) return t;
+                return {
+                  ...t,
+                  comments: [...(t.comments || []), comment]
+                };
+              })
+            };
+          })
+        }));
+      } finally {
+        end();
+      }
+    },
+    deleteTaskComment: async (projectId: string, taskId: string, commentId: string) => {
+      begin();
+      try {
+        await api.deleteTaskComment(projectId, taskId, commentId);
+        setState(prev => ({
+          ...prev,
+          projects: prev.projects.map(p => {
+            if (p.id !== projectId) return p;
+            return {
+              ...p,
+              tasks: p.tasks.map(t => {
+                if (t.id !== taskId) return t;
+                return {
+                  ...t,
+                  comments: (t.comments || []).filter(c => c.id !== commentId)
+                };
+              })
+            };
+          })
+        }));
+      } finally {
+        end();
+      }
     },
     addTeamMember: async (name: string) => {
       begin();

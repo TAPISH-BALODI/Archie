@@ -21,14 +21,32 @@
 .grid-3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+.grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
 @media (max-width: 1000px) {
   .grid-3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 700px) {
   .grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+  .grid-2 {
     grid-template-columns: 1fr;
   }
 }
@@ -105,11 +123,14 @@
   border-radius: 999px;
   overflow: hidden;
   width: 100%;
+  position: relative;
 }
 .progress > span {
   display: block;
   height: 100%;
   background: linear-gradient(90deg, #22c55e, #16a34a);
+  transition: width 300ms ease;
+  border-radius: 999px;
 }
 
 /* Status badge */
@@ -175,10 +196,13 @@
   border-radius: 999px;
   overflow: hidden;
   width: 100%;
+  position: relative;
 }
 .capacity > span {
   display: block;
   height: 100%;
+  transition: width 300ms ease;
+  border-radius: 999px;
 }
 .cap-green { background: #22c55e; }
 .cap-orange { background: #f59e0b; }
@@ -187,13 +211,35 @@
 /* Hover scale for project cards */
 .project-card {
   position: relative;
-  transition: transform  250ms ease;
+  transition: transform 250ms ease, box-shadow 250ms ease;
   will-change: transform;
   transform-origin: center;
 }
 .project-card:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(2, 6, 23, 0.1);
   z-index: 2;
+}
+
+/* Smooth transitions for list items */
+.list-item {
+  transition: background-color 150ms ease, border-color 150ms ease, transform 100ms ease;
+}
+.list-item:hover {
+  transform: translateX(2px);
+}
+
+/* Button transitions */
+.btn {
+  transition: all 150ms ease;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* Input focus transitions */
+.input, .select {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
 /* Loading overlay */
@@ -216,5 +262,174 @@
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Stat cards */
+.stat-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+.stat-label {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Health indicators */
+.health-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.health-good { background: #dcfce7; color: #166534; }
+.health-warning { background: #fef3c7; color: #92400e; }
+.health-critical { background: #fee2e2; color: #991b1b; }
+
+/* Chart container */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  margin: 16px 0;
+}
+
+/* Suggestion badge */
+.suggestion-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #dbeafe;
+  color: #1e3a8a;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.suggestion-badge:hover {
+  background: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+/* Task search */
+.task-search {
+  margin-bottom: 12px;
+}
+
+/* Tag badges */
+.tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #e2e8f0;
+  color: #334155;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tag-badge:hover {
+  background: #cbd5e1;
+}
+.tag-badge-small {
+  display: inline-flex;
+  padding: 2px 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* Priority badges */
+.priority-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.priority-low { background: #dcfce7; color: #166534; }
+.priority-medium { background: #dbeafe; color: #1e3a8a; }
+.priority-high { background: #fef3c7; color: #92400e; }
+.priority-urgent { background: #fee2e2; color: #991b1b; }
+
+/* Task status badges */
+.task-status-badge {
+  display: inline-flex;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+.task-status-draft { background: #f1f5f9; color: #64748b; }
+.task-status-version { background: #dbeafe; color: #1e3a8a; }
+.task-status-active { background: #dcfce7; color: #166534; }
+
+/* Task editor */
+.task-editor {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+.task-description {
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Comments */
+.comments-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+.comment-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.comment-item:last-child {
+  border-bottom: none;
+}
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.comment-text {
+  font-size: 13px;
+  color: #334155;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.comment-date {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.comment-input {
+  margin-top: 8px;
 }
 
