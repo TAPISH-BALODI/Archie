@@ -58,7 +58,23 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setError(undefined);
     try {
       const [projects, team] = await Promise.all([api.listProjects(), api.listTeam()]);
-      setState(toState(projects || [], team || []));
+      
+      const projectsWithTasks = await Promise.all(
+        (projects || []).map(async (p) => {
+          try {
+            const tasks = await api.listTasks(p.id);
+            const taskList = tasks || [];
+            const calculatedProgress = p.autoProgress && taskList.length > 0
+              ? computeProgressFromTasks(taskList as unknown as Task[])
+              : p.progress;
+            return { ...p, tasks: taskList, progress: calculatedProgress };
+          } catch {
+            return { ...p, tasks: [], progress: p.progress };
+          }
+        })
+      );
+      
+      setState(toState(projectsWithTasks, team || []));
       setInitialLoad(true);
     } catch (e: any) {
       console.error('Failed to load data:', e);
