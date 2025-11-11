@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import type { AppState, Project, Task, TeamMember } from './types';
 import { api, type ApiProject, type ApiTask } from './api';
 
@@ -20,7 +20,7 @@ type Methods = {
   addTeamMember: (name: string) => Promise<void>;
 };
 
-type Ctx = { state: AppState; methods: Methods; loading: boolean; error?: string };
+type Ctx = { state: AppState; methods: Methods; loading: boolean; initialLoad: boolean; error?: string };
 
 const AppStateContext = createContext<Ctx | null>(null);
 
@@ -31,6 +31,7 @@ function toState(projects: ApiProject[], team: TeamMember[]): AppState {
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>({ projects: [], team: [] });
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const inFlight = useRef(0);
   const assignmentTimers = useRef<Map<string, any>>(new Map());
@@ -58,18 +59,16 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try {
       const [projects, team] = await Promise.all([api.listProjects(), api.listTeam()]);
       setState(toState(projects || [], team || []));
+      setInitialLoad(true);
     } catch (e: any) {
       console.error('Failed to load data:', e);
       setError(e?.message ?? 'Failed to load. Check your API connection.');
       setState({ projects: [], team: [] });
+      setInitialLoad(true);
     } finally {
       end();
     }
   }
-
-  useEffect(() => {
-    void loadAll();
-  }, []);
 
   const methods: Methods = {
     reload: loadAll,
@@ -395,8 +394,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value: Ctx = useMemo(
-    () => ({ state, methods, loading, error }),
-    [state, methods, loading, error]
+    () => ({ state, methods, loading, initialLoad, error }),
+    [state, methods, loading, initialLoad, error]
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

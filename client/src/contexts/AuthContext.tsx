@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 
 interface User {
   id: string;
@@ -13,6 +13,7 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  onAuthChange?: (callback: () => void) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const authChangeCallback = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('auth_token');
@@ -40,6 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
+        if (authChangeCallback.current) {
+          authChangeCallback.current();
+        }
       } else {
         localStorage.removeItem('auth_token');
         setToken(null);
@@ -68,6 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(data.token);
     setUser(data.user);
     localStorage.setItem('auth_token', data.token);
+    if (authChangeCallback.current) {
+      authChangeCallback.current();
+    }
   }
 
   async function register(email: string, password: string, name: string) {
@@ -86,6 +94,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(data.token);
     setUser(data.user);
     localStorage.setItem('auth_token', data.token);
+    if (authChangeCallback.current) {
+      authChangeCallback.current();
+    }
+  }
+
+  function onAuthChange(callback: () => void) {
+    authChangeCallback.current = callback;
   }
 
   function logout() {
@@ -95,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, loading, onAuthChange }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './pages/Dashboard';
 import { ProjectPage } from './pages/ProjectPage';
@@ -11,14 +12,33 @@ import { useAppState } from './store';
 import { useAuth } from './contexts/AuthContext';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading, onAuthChange } = useAuth();
+  const { loading, initialLoad, methods } = useAppState();
   
-  if (loading) {
+  useEffect(() => {
+    if (user && !initialLoad) {
+      methods.reload();
+    }
+  }, [user, initialLoad, methods]);
+  
+  useEffect(() => {
+    if (onAuthChange) {
+      onAuthChange(() => {
+        methods.reload();
+      });
+    }
+  }, [onAuthChange, methods]);
+  
+  if (authLoading) {
     return <LoadingOverlay show={true} />;
   }
   
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  
+  if (!initialLoad) {
+    return <LoadingOverlay show={true} />;
   }
   
   return <>{children}</>;
