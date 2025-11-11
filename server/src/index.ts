@@ -170,7 +170,7 @@ app.post('/auth/register', async (req, res) => {
       [id, email, passwordHash, name]
     );
     
-    const token = jwt.sign({ userId: id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = (jwt as any).sign({ userId: id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     
     res.status(201).json({ token, user: { id, email, name } });
   } catch (e: any) {
@@ -203,7 +203,7 @@ app.post('/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = (jwt as any).sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     
     res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
   } catch (e: any) {

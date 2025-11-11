@@ -13,7 +13,7 @@ import { useAuth } from './contexts/AuthContext';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading, onAuthChange } = useAuth();
-  const { loading, initialLoad, methods } = useAppState();
+  const {initialLoad, methods } = useAppState();
   
   useEffect(() => {
     if (user && !initialLoad) {
