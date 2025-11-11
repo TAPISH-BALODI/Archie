@@ -3,49 +3,62 @@ import { useAppState, getProjectStatus } from '../store';
 import { ProgressBar } from '../components/ProgressBar';
 
 function BarChart({ data, maxValue, height = 150 }: { data: Array<{ label: string; value: number; color?: string }>; maxValue: number; height?: number }) {
-  const maxBarHeight = height - 40;
-  const barWidth = Math.max(40, (100 / data.length) - 2);
+  const labelHeight = 30;
+  const topPadding = 20;
+  const maxBarHeight = height - labelHeight - topPadding;
+  const barWidthPercent = Math.max(15, Math.min(22, 90 / data.length));
+  const spacingPercent = (100 - (barWidthPercent * data.length)) / (data.length + 1);
   
   return (
-    <svg width="100%" height={height} style={{ overflow: 'visible' }}>
-      {data.map((item, i) => {
-        const barHeight = maxValue > 0 ? (item.value / maxValue) * maxBarHeight : 0;
-        const x = (i * (100 / data.length)) + 2;
-        const color = item.color || '#22c55e';
-        return (
-          <g key={i}>
-            <rect
-              x={`${x}%`}
-              y={height - barHeight - 20}
-              width={`${barWidth}%`}
-              height={barHeight}
-              fill={color}
-              rx={4}
-            />
-            <text
-              x={`${x + barWidth / 2}%`}
-              y={height - 5}
-              textAnchor="middle"
-              fontSize="10"
-              fill="#64748b"
-            >
-              {item.label.length > 8 ? item.label.substring(0, 7) + '...' : item.label}
-            </text>
-            {item.value > 0 && (
+    <svg width="100%" height={height} style={{ display: 'block', overflow: 'visible' }}>
+      <defs>
+        <clipPath id="chartClip">
+          <rect x="0" y="0" width="100%" height={height} />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#chartClip)">
+        {data.map((item, i) => {
+          const barHeight = maxValue > 0 ? (item.value / maxValue) * maxBarHeight : 0;
+          const xPercent = spacingPercent + (i * (barWidthPercent + spacingPercent));
+          const color = item.color || '#22c55e';
+          const barY = topPadding + (maxBarHeight - barHeight);
+          return (
+            <g key={i}>
+              <rect
+                x={`${xPercent}%`}
+                y={barY}
+                width={`${barWidthPercent}%`}
+                height={barHeight}
+                fill={color}
+                rx={4}
+              />
               <text
-                x={`${x + barWidth / 2}%`}
-                y={height - barHeight - 25}
+                x={`${xPercent + barWidthPercent / 2}%`}
+                y={height - 8}
                 textAnchor="middle"
-                fontSize="11"
-                fontWeight="600"
-                fill="#0f172a"
+                fontSize="10"
+                fill="#64748b"
+                dominantBaseline="middle"
               >
-                {item.value}
+                {item.label.length > 10 ? item.label.substring(0, 9) + '...' : item.label}
               </text>
-            )}
-          </g>
-        );
-      })}
+              {item.value > 0 && barHeight > 15 && (
+                <text
+                  x={`${xPercent + barWidthPercent / 2}%`}
+                  y={barY - 4}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fontWeight="600"
+                  fill="#0f172a"
+                  dominantBaseline="middle"
+                >
+                  {item.value}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </g>
     </svg>
   );
 }
