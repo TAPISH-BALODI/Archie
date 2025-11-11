@@ -46,11 +46,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export function App() {
   const { loading } = useAppState();
-  const { loading: authLoading } = useAuth();
+  const { loading: user } = useAuth();
   
   return (
     <div style={{ minHeight: '100%' }}>
-      <LoadingOverlay show={loading || authLoading} />
+      {user && <LoadingOverlay show={loading} />}
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

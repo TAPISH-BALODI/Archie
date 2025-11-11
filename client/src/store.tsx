@@ -30,7 +30,7 @@ function toState(projects: ApiProject[], team: TeamMember[]): AppState {
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>({ projects: [], team: [] });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const inFlight = useRef(0);
