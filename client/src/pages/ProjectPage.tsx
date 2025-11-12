@@ -375,7 +375,7 @@ export function ProjectPage() {
           </div>
         )}
 
-        <div className="list">
+        <div className="list" style={{  display: "grid", gap: "10px"}}>
           {filteredTasks.map(t => {
             const member = (state.team ?? []).find(m => m.id === t.assigneeId);
             const isSelected = selectedTasks.has(t.id);
