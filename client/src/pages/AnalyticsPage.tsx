@@ -143,19 +143,54 @@ export function AnalyticsPage() {
     const unassignedTasks = projects.reduce((sum, p) => 
       sum + (p.tasks?.filter(t => !t.assigneeId && !t.completed).length ?? 0), 0);
     
-    const taskCountByMember = new Map<string, number>();
+    const activeTasksByMember = new Map<string, number>();
+    const completedTasksByMember = new Map<string, number>();
+    const projectsByMember = new Map<string, Set<string>>();
+    
     for (const p of projects) {
       for (const t of (p.tasks ?? [])) {
-        if (t.assigneeId && !t.completed) {
-          taskCountByMember.set(t.assigneeId, (taskCountByMember.get(t.assigneeId) ?? 0) + 1);
+        if (!t.assigneeId) continue;
+        if (t.completed) {
+          completedTasksByMember.set(t.assigneeId, (completedTasksByMember.get(t.assigneeId) ?? 0) + 1);
+        } else {
+          activeTasksByMember.set(t.assigneeId, (activeTasksByMember.get(t.assigneeId) ?? 0) + 1);
         }
+        if (!projectsByMember.has(t.assigneeId)) {
+          projectsByMember.set(t.assigneeId, new Set());
+        }
+        projectsByMember.get(t.assigneeId)!.add(p.id);
       }
     }
     
-    const teamWorkload = team.map(m => ({
-      name: m.name,
-      taskCount: taskCountByMember.get(m.id) ?? 0
-    })).sort((a, b) => b.taskCount - a.taskCount);
+    const avgWorkload = team.length > 0 
+      ? team.reduce((sum, m) => sum + (activeTasksByMember.get(m.id) ?? 0), 0) / team.length
+      : 0;
+    
+    const teamWorkload = team.map(m => {
+      const active = activeTasksByMember.get(m.id) ?? 0;
+      const completed = completedTasksByMember.get(m.id) ?? 0;
+      const total = active + completed;
+      const capacityPercent = Math.min(100, Math.round((active / 5) * 100));
+      const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const workloadStatus = active === 0 ? 'available' 
+        : active <= 3 ? 'optimal' 
+        : active <= 5 ? 'busy' 
+        : 'overloaded';
+      const deviation = avgWorkload > 0 ? ((active - avgWorkload) / avgWorkload) * 100 : 0;
+      
+      return {
+        id: m.id,
+        name: m.name,
+        active,
+        completed,
+        total,
+        capacityPercent,
+        completionRate,
+        workloadStatus,
+        projectCount: projectsByMember.get(m.id)?.size ?? 0,
+        deviation
+      };
+    }).sort((a, b) => b.active - a.active);
     
     const progressRanges = [
       { label: '0-25%', value: 0, color: '#ef4444' },
@@ -247,17 +282,139 @@ export function AnalyticsPage() {
       </div>
 
       {analytics.teamWorkload.length > 0 && (
-        <div className="card" style={{ display: 'grid', gap: 12 }}>
-          <div className="title" style={{ fontSize: 16 }}>Team Workload</div>
+        <div className="card" style={{ display: 'grid', gap: 16 }}>
+          <div>
+            <div className="title" style={{ fontSize: 16, marginBottom: 4 }}>Team Workload Distribution</div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Active tasks per team member with capacity indicators
+            </div>
+          </div>
+          
           <div className="chart-container">
             <BarChart
-              data={analytics.teamWorkload.map(m => ({
-                label: m.name,
-                value: m.taskCount,
-                color: m.taskCount <= 3 ? '#22c55e' : m.taskCount <= 5 ? '#f59e0b' : '#ef4444'
-              }))}
-              maxValue={Math.max(...analytics.teamWorkload.map(m => m.taskCount), 1)}
+              data={analytics.teamWorkload.map(m => {
+                let color = '#94a3b8';
+                if (m.workloadStatus === 'available') color = '#cbd5e1';
+                else if (m.workloadStatus === 'optimal') color = '#22c55e';
+                else if (m.workloadStatus === 'busy') color = '#f59e0b';
+                else color = '#ef4444';
+                
+                return {
+                  label: m.name,
+                  value: m.active,
+                  color
+                };
+              })}
+              maxValue={Math.max(...analytics.teamWorkload.map(m => m.active), 1)}
             />
+          </div>
+          
+          <div style={{ display: 'grid', gap: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>Workload Details</div>
+            <div className="list">
+              {analytics.teamWorkload.map(member => {
+                const statusColors = {
+                  available: { bg: '#f1f5f9', text: '#64748b', label: 'Available' },
+                  optimal: { bg: '#dcfce7', text: '#166534', label: 'Optimal' },
+                  busy: { bg: '#fef3c7', text: '#92400e', label: 'Busy' },
+                  overloaded: { bg: '#fee2e2', text: '#991b1b', label: 'Overloaded' }
+                };
+                const status = statusColors[member.workloadStatus as keyof typeof statusColors];
+                
+                return (
+                  <div key={member.id} className="list-item" style={{ display: 'grid', gap: 8 }}>
+                    <div className="space-between" style={{ alignItems: 'flex-start' }}>
+                      <div style={{ display: 'grid', gap: 4, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ fontWeight: 500 }}>{member.name}</div>
+                          <span 
+                            style={{ 
+                              fontSize: 10, 
+                              padding: '2px 6px', 
+                              borderRadius: 4,
+                              background: status.bg,
+                              color: status.text,
+                              fontWeight: 500
+                            }}
+                          >
+                            {status.label}
+                          </span>
+                        </div>
+                        <div className="row" style={{ gap: 12, fontSize: 11, flexWrap: 'wrap' }}>
+                          <span className="muted">
+                            {member.active} active task{member.active !== 1 ? 's' : ''}
+                          </span>
+                          {member.completed > 0 && (
+                            <span className="muted">
+                              {member.completed} completed
+                            </span>
+                          )}
+                          {member.projectCount > 0 && (
+                            <span className="muted">
+                              {member.projectCount} project{member.projectCount !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', display: 'grid', gap: 4 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>
+                          {member.capacityPercent}%
+                        </div>
+                        <div style={{ fontSize: 10, color: '#64748b' }}>capacity</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ flex: 1, height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                        <div 
+                          style={{ 
+                            height: '100%', 
+                            width: `${member.capacityPercent}%`,
+                            background: status.text,
+                            transition: 'width 0.3s ease'
+                          }} 
+                        />
+                      </div>
+                      {member.completionRate > 0 && (
+                        <div style={{ fontSize: 10, color: '#64748b', minWidth: 50, textAlign: 'right' }}>
+                          {member.completionRate}% done
+                        </div>
+                      )}
+                    </div>
+                    {member.deviation > 20 && (
+                      <div style={{ fontSize: 10, color: '#f59e0b', fontStyle: 'italic' }}>
+                        {member.deviation > 0 ? '+' : ''}{Math.round(member.deviation)}% above team average
+                      </div>
+                    )}
+                    {member.deviation < -20 && (
+                      <div style={{ fontSize: 10, color: '#3b82f6', fontStyle: 'italic' }}>
+                        {Math.round(Math.abs(member.deviation))}% below team average
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          <div style={{ padding: 12, background: '#f8fafc', borderRadius: 8, fontSize: 11 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6, color: '#0f172a' }}>Workload Balance</div>
+            <div style={{ display: 'grid', gap: 4, color: '#64748b' }}>
+              {analytics.teamWorkload.filter(m => m.workloadStatus === 'overloaded').length > 0 && (
+                <div>
+                  ⚠️ {analytics.teamWorkload.filter(m => m.workloadStatus === 'overloaded').length} member{analytics.teamWorkload.filter(m => m.workloadStatus === 'overloaded').length !== 1 ? 's' : ''} overloaded - consider redistributing tasks
+                </div>
+              )}
+              {analytics.teamWorkload.filter(m => m.workloadStatus === 'available').length > 0 && (
+                <div>
+                  ✓ {analytics.teamWorkload.filter(m => m.workloadStatus === 'available').length} member{analytics.teamWorkload.filter(m => m.workloadStatus === 'available').length !== 1 ? 's' : ''} available for new assignments
+                </div>
+              )}
+              {analytics.unassignedTasks > 0 && (
+                <div>
+                  📋 {analytics.unassignedTasks} unassigned task{analytics.unassignedTasks !== 1 ? 's' : ''} - assign to balance workload
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
