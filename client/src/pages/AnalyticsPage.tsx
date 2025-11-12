@@ -300,7 +300,7 @@ export function AnalyticsPage() {
                 else color = '#ef4444';
                 
                 return {
-                  label: m.name,
+                  label: m.name || `id: ${m.id}`,
                   value: m.active,
                   color
                 };
@@ -309,7 +309,7 @@ export function AnalyticsPage() {
             />
           </div>
           
-          <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'flex',flexDirection:'column', gap: 12 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>Workload Details</div>
             <div className="list">
               {analytics.teamWorkload.map(member => {

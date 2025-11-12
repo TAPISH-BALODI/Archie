@@ -171,8 +171,9 @@
 
 /* Lists */
 .list {
-  display: grid;
+  display: flex;
   gap: 10px;
+  flex-direction: row;
 }
 .list-item {
   display: flex;
